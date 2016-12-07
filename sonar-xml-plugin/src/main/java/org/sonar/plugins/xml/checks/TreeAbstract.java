@@ -32,6 +32,17 @@ public class TreeAbstract {
 	Hashtable<String, Nodo> packages= new Hashtable<String, Nodo>();
 	ArrayList<Relacion> relaciones = new ArrayList<Relacion>();
 
+	// lista de errores cuando la clase no tiene un nombre 
+	ArrayList<Node> ErroresNombre= new ArrayList<Node>();
+	// Lista de errores de atributos sin tipo
+	ArrayList<Node> ErroresTipoAtributos= new ArrayList<Node>();
+	//Lista de errores de tipos invalidos de los atrbutos
+	ArrayList<Node> ErroresTipoValidoAtributos= new ArrayList<Node>();
+	//Lista de errore de elementos con nombres invalidos 
+	ArrayList<Node> ErroresNombreInvalidos= new ArrayList<Node>();
+	// Lista de errores de relacion sin source o target
+	ArrayList<Node> ErroresRelaciones= new ArrayList<Node>();
+
 	private static TreeAbstract instance;
 	private static XmlSourceCode instancexml;
 
@@ -42,11 +53,7 @@ public class TreeAbstract {
 			init(document);
 		}
 	}
-	/**
-	 * 
-	 * @param xml
-	 * @return
-	 */
+
 	public static TreeAbstract getInstance(XmlSourceCode xml){
 		if(instancexml!=xml){
 			instance=null;
@@ -81,10 +88,22 @@ public class TreeAbstract {
 			Element eElement = (Element) nNode;
 
 			//Creaci�n del Nodo Clasee
-			String name = nNode.getAttributes().getNamedItem("name").getNodeValue();
+			Node className=nNode.getAttributes().getNamedItem("name");
+			String name = "";
+			//Valida que la clase tenga un nombre
+			if(className!=null){
+				name= className.getNodeValue();
+				if(name.equals("")){
+					ErroresNombre.add(nNode);
+				}else{
+					validarNombreElementos(name, nNode);
+				}
+			}else{
+				ErroresNombre.add(nNode);
+			}
+
 			String id = nNode.getAttributes().getNamedItem("xmi.id").getNodeValue();
 			Nodo clase = new Nodo(name, id, "Clase");
-
 			try {
 				NodeList nListAux = eElement.getElementsByTagName("UML:Attribute");
 				NamedNodeMap attributes;
@@ -92,10 +111,28 @@ public class TreeAbstract {
 				for (int i = 0; 1 < nListAux.getLength(); i++){
 					attributes=nListAux.item(i).getAttributes();
 					//Creaci�n del nodo Atributo
-					String attNombre = attributes.getNamedItem("name").getNodeValue();
+					Node attNombre = attributes.getNamedItem("name");
+					String nombreAtributo="";
+					if(attNombre!=null){
+						nombreAtributo=attNombre.getNodeValue();
+						validarNombreElementos(nombreAtributo, nListAux.item(i));
+					}
 					String attid = attributes.getNamedItem("xmi.id").getNodeValue();
-					String atttipo = attributes.getNamedItem("type").getNodeValue();
-					Nodo atributo = new Nodo(attNombre, attid, "Atributo");
+
+					//valida que el atributo tenga un tipo valido
+					Node attrType=attributes.getNamedItem("type");
+					String atttipo = "";
+					if(attrType!=null){
+						atttipo=attributes.getNamedItem("type").getNodeValue();
+						if(atttipo.equals("")){
+							ErroresTipoAtributos.add(nListAux.item(i));
+						}else{
+							ValidarTipoAtributo(atttipo,nListAux.item(i));
+						}
+					}else{
+						ErroresTipoAtributos.add(nListAux.item(i));
+					}
+					Nodo atributo = new Nodo(nombreAtributo, attid, "Atributo");
 					atributo.setTipo(atttipo);
 					//Agregando el Atributo a la Clase
 					clase.getAtributos().add(atributo);
@@ -105,9 +142,15 @@ public class TreeAbstract {
 				//Busqueda del subElemento Operation
 				for (int j = 0; j < nListAux.getLength(); j++){
 					attributes=nListAux.item(j).getAttributes();
-					String opName = attributes.getNamedItem("name").getNodeValue();
+
+					Node opName = attributes.getNamedItem("name");
+					String nombreOperacion="";
+					if(opName!=null){
+						nombreOperacion=opName.getNodeValue();
+						validarNombreElementos(nombreOperacion, nListAux.item(j));
+					}
 					String opId = attributes.getNamedItem("xmi.id").getNodeValue();
-					Nodo operacion = new Nodo(opName, opId, "Operacion");
+					Nodo operacion = new Nodo(nombreOperacion, opId, "Operacion");
 
 					//Revisi�n de Par�metros y Return de la operaci�n
 					NodeList nListParameters = nListAux.item(j).getChildNodes();
@@ -149,7 +192,29 @@ public class TreeAbstract {
 			clases.add(clase);
 		}		
 	}
+	/**
+	 * metodo para validar que el tipo del atributo se encuentre dentro las definiciones del 
+	 * dataType
+	 * @param valor del attributo para validar que se encuentre dentro de los dataTypes  
+	 * @param node Referencia al nodo que representa el atributo dentro del archivo Xmi
+	 */
+	public void ValidarTipoAtributo(String valor,Node node){
+		String tipo=BuscarDataType(valor);
+		if(tipo.equals("")){
+			ErroresTipoValidoAtributos.add(node);
+		}
+	}
+	/**
+	 * Método para validar que los nombres de los elementos cumplan con el estandar
+	 * @param nombre nombre del elemento
+	 * @param nodo referencia del elemento en el archivo Xmi
+	 */
+	public void validarNombreElementos(String nombre, Node nodo){
 
+		if(!nombre.matches("^[a-zA-Z][a-zA-Z0-9]*")){
+			ErroresNombreInvalidos.add(nodo);
+		}
+	}
 	/************
 	  PACKAGES
 	 ************/
@@ -238,14 +303,13 @@ public class TreeAbstract {
 		for (int temp = 0; temp < nList.getLength(); temp++) {
 			Node nNode = nList.item(temp);
 			NamedNodeMap attributes=nNode.getAttributes();
-			try {
-				//Creaci�n de la relaci�n
-				String suplier = attributes.getNamedItem("supplier").getNodeValue();
-				String client = attributes.getNamedItem("client").getNodeValue();
-				relaciones.add(new Relacion(suplier, client, "Dependency"));
-
-			}catch (NullPointerException e){
-				//			System.out.println("No tiene Relaci�n de Containment");
+			//Creaci�n de la relaci�n
+			Node suplier = attributes.getNamedItem("supplier");
+			Node client = attributes.getNamedItem("client");
+			if(suplier!=null&&client!=null){
+				relaciones.add(new Relacion(suplier.getNodeValue(), client.getNodeValue(), "Dependency"));	
+			}else{
+				ErroresRelaciones.add(nNode);
 			}
 		}
 	}
@@ -261,13 +325,13 @@ public class TreeAbstract {
 		for (int temp = 0; temp < nList.getLength(); temp++) {
 			Node nNode = nList.item(temp);
 			NamedNodeMap attributes=nNode.getAttributes();
-			try {
-				//Creaci�n de la relaci�n
-				String child =attributes.getNamedItem("child").getNodeValue();
-				String parent =attributes.getNamedItem("parent").getNodeValue();
-				relaciones.add(new Relacion(child, parent, "Generalization"));
-			}catch (NullPointerException e){
-				//			System.out.println("No tiene Relaci�n de Containment");
+			//Creaci�n de la relaci�n
+			Node child =attributes.getNamedItem("child");
+			Node parent =attributes.getNamedItem("parent");
+			if(child!=null&&parent!=null){
+				relaciones.add(new Relacion(child.getNodeValue(), parent.getNodeValue(), "Generalization"));	
+			}else{
+				ErroresRelaciones.add(nNode);
 			}
 		}
 	}
@@ -282,17 +346,17 @@ public class TreeAbstract {
 		for (int temp = 0; temp < nList.getLength(); temp++) {
 			Node nNode = nList.item(temp);
 			Element eElement = (Element) nNode;
-			try {
-				//Busqueda del subElemento Attribute
-				NodeList nListNodos=eElement.getElementsByTagName("UML:AssociationEnd");
-				String idClase1=nListNodos.item(0).getAttributes().getNamedItem("type").getNodeValue();
-				String idClase2=nListNodos.item(1).getAttributes().getNamedItem("type").getNodeValue();
-				relaciones.add(new Relacion(idClase1, idClase2, "Generalization"));
-			}catch (NullPointerException e){
-				//			System.out.println("No hay mas Atributos");
+			//Busqueda del subElemento Attribute
+			NodeList nListNodos=eElement.getElementsByTagName("UML:AssociationEnd");
+			if(nListNodos!=null){
+				Node idClase1=nListNodos.item(0).getAttributes().getNamedItem("type");
+				Node idClase2=nListNodos.item(1).getAttributes().getNamedItem("type");
+				if(idClase1!=null&&idClase2!=null){
+					relaciones.add(new Relacion(idClase1.getNodeValue(), idClase2.getNodeValue(), "Generalization"));	
+				}else{
+					ErroresRelaciones.add(nNode);
+				}
 			}
 		}
-
 	}
-
 }
