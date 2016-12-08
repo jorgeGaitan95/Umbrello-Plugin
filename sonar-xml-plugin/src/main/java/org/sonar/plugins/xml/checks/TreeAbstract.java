@@ -257,7 +257,7 @@ public class TreeAbstract {
 	}
 
 	public String BuscarDataType(String id){
-		Nodo n = packages.get(id);
+		Nodo n = dataType.get(id);
 		if (n != null) {
 			return n.getNombre();
 		}
@@ -348,7 +348,7 @@ public class TreeAbstract {
 			Element eElement = (Element) nNode;
 			//Busqueda del subElemento Attribute
 			NodeList nListNodos=eElement.getElementsByTagName("UML:AssociationEnd");
-			if(nListNodos!=null){
+			if(nListNodos!=null&&nListNodos.getLength()==2){
 				Node idClase1=nListNodos.item(0).getAttributes().getNamedItem("type");
 				Node idClase2=nListNodos.item(1).getAttributes().getNamedItem("type");
 				if(idClase1!=null&&idClase2!=null){
@@ -356,7 +356,32 @@ public class TreeAbstract {
 				}else{
 					ErroresRelaciones.add(nNode);
 				}
+			}else {
+				ErroresRelaciones.add(nNode);
 			}
+			
 		}
 	}
+
+	public ArrayList<Node> getErroresNombre() {
+		return ErroresNombre;
+	}
+
+	public ArrayList<Node> getErroresTipoAtributos() {
+		return ErroresTipoAtributos;
+	}
+
+	public ArrayList<Node> getErroresTipoValidoAtributos() {
+		return ErroresTipoValidoAtributos;
+	}
+
+	public ArrayList<Node> getErroresNombreInvalidos() {
+		return ErroresNombreInvalidos;
+	}
+
+	public ArrayList<Node> getErroresRelaciones() {
+		return ErroresRelaciones;
+	}
+	
+	
 }

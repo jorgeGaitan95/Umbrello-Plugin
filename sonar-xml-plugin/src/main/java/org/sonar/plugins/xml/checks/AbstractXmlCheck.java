@@ -30,6 +30,10 @@ public abstract class AbstractXmlCheck {
   private RuleKey ruleKey;
   private XmlSourceCode xmlSourceCode;
 
+  protected TreeAbstract getArbol(){
+	  return TreeAbstract.getInstance(getWebSourceCode());
+  }
+  
   protected final void createViolation(Integer linePosition, String message) {
     getWebSourceCode().addViolation(new XmlIssue(ruleKey, linePosition, message));
   }

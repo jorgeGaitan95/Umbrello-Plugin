@@ -37,7 +37,12 @@ public class CheckRepository {
       new NewlineCheck(),
       new XmlSchemaCheck(),
       new CharBeforePrologCheck(),
-      new XPathCheck());
+      new XPathCheck(),
+      new EmptyClassNameCheck(),
+      new AttributeEmptyTypeCheck(),
+      new AttributeValidTypeCheck(),
+      new ElementInvalidNameCheck(),
+      new RelationshipConnectedCheck());
   }
 
   public static List<Class> getCheckClasses() {

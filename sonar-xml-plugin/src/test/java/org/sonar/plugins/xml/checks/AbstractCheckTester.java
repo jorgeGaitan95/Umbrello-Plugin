@@ -41,7 +41,7 @@ public abstract class AbstractCheckTester extends AbstractXmlPluginTester {
   protected static final File CHAR_BEFORE_ROLOG_FILE = new File("src/test/resources/src/pom_with_chars_before_prolog.xml");
   protected static final File UTF8_BOM_FILE = new File("src/test/resources/checks/generic/utf8-bom.xml");
   protected static final File SONARSOURCE_FILE = new File("src/test/resources/checks/generic/sonarsource.html");
-
+  protected static final File SOURCE_CODE= new File("src/test/resources/diagrama.xmi");
   protected static final String INCORRECT_NUMBER_OF_VIOLATIONS = "Incorrect number of violations";
 
   protected XmlSourceCode parseAndCheck(File file, AbstractXmlCheck check) {
