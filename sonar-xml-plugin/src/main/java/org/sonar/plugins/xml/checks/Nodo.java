@@ -19,6 +19,8 @@ package org.sonar.plugins.xml.checks;
 
 import java.util.ArrayList;
 
+import org.w3c.dom.Node;
+
 public class Nodo {
 
 	String nombre;
@@ -30,11 +32,13 @@ public class Nodo {
 	ArrayList<Nodo> atributos = new ArrayList<Nodo>();
 	ArrayList<Nodo> operaciones = new ArrayList<Nodo>();
 	ArrayList<Nodo> parametros = new ArrayList<Nodo>();
+	Node nodoReferencia;
 	
-	public Nodo(String newNombre, String newId, String newTipoNodo) {
+	public Nodo(String newNombre, String newId, String newTipoNodo,Node nodoReferencia) {
 		nombre = newNombre;
 		id = newId;
 		tipoNodo = newTipoNodo;
+		this.nodoReferencia=nodoReferencia;
 	}
 	
 	public String getTipo() {
@@ -107,5 +111,9 @@ public class Nodo {
 
 	public void setRetorno(String retorno) {
 		this.retorno = retorno;
+	}
+
+	public Node getNodoReferencia() {
+		return nodoReferencia;
 	}
 }

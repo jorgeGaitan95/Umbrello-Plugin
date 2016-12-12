@@ -31,7 +31,7 @@ public class TreeAbstract {
 	Hashtable<String, Nodo> dataType= new Hashtable<String, Nodo>();
 	Hashtable<String, Nodo> packages= new Hashtable<String, Nodo>();
 	ArrayList<Relacion> relaciones = new ArrayList<Relacion>();
-
+	ArrayList<String> palabrasReservadas=new ArrayList<String>();
 	// lista de errores cuando la clase no tiene un nombre 
 	ArrayList<Node> ErroresNombre= new ArrayList<Node>();
 	// Lista de errores de atributos sin tipo
@@ -42,7 +42,8 @@ public class TreeAbstract {
 	ArrayList<Node> ErroresNombreInvalidos= new ArrayList<Node>();
 	// Lista de errores de relacion sin source o target
 	ArrayList<Node> ErroresRelaciones= new ArrayList<Node>();
-
+	// Lista de errores de elementos con palabras reservadas en los nombres
+	ArrayList<Node> ErroresPalabrasReservadas= new ArrayList<Node>();
 	private static TreeAbstract instance;
 	private static XmlSourceCode instancexml;
 
@@ -66,7 +67,7 @@ public class TreeAbstract {
 
 	public void init(Document doc){
 		doc.getDocumentElement().normalize();
-
+		initPalabrasReservadas();
 		//Lectura de Nodos
 		ArmarDataTypes(doc);
 		ArmarPackages(doc);
@@ -103,12 +104,12 @@ public class TreeAbstract {
 			}
 
 			String id = nNode.getAttributes().getNamedItem("xmi.id").getNodeValue();
-			Nodo clase = new Nodo(name, id, "Clase");
+			Nodo clase = new Nodo(name, id, "Clase",nNode);
 			try {
 				NodeList nListAux = eElement.getElementsByTagName("UML:Attribute");
 				NamedNodeMap attributes;
 				//Busqueda del subElemento Attribute
-				for (int i = 0; 1 < nListAux.getLength(); i++){
+				for (int i = 0; i < nListAux.getLength(); i++){
 					attributes=nListAux.item(i).getAttributes();
 					//Creaci�n del nodo Atributo
 					Node attNombre = attributes.getNamedItem("name");
@@ -132,7 +133,7 @@ public class TreeAbstract {
 					}else{
 						ErroresTipoAtributos.add(nListAux.item(i));
 					}
-					Nodo atributo = new Nodo(nombreAtributo, attid, "Atributo");
+					Nodo atributo = new Nodo(nombreAtributo, attid, "Atributo",nListAux.item(i));
 					atributo.setTipo(atttipo);
 					//Agregando el Atributo a la Clase
 					clase.getAtributos().add(atributo);
@@ -150,39 +151,44 @@ public class TreeAbstract {
 						validarNombreElementos(nombreOperacion, nListAux.item(j));
 					}
 					String opId = attributes.getNamedItem("xmi.id").getNodeValue();
-					Nodo operacion = new Nodo(nombreOperacion, opId, "Operacion");
-
+					Nodo operacion = new Nodo(nombreOperacion, opId, "Operacion", nListAux.item(j));
+					Element eOperacion = (Element) nListAux.item(j);
 					//Revisi�n de Par�metros y Return de la operaci�n
-					NodeList nListParameters = nListAux.item(j).getChildNodes();
+					NodeList nListParameters = eOperacion.getElementsByTagName("UML:Parameter");
 					//Busqueda por el subsubElemento Parameter
-					for (int k = 0; k < nListParameters.getLength(); j++){
+					for (int k = 0; k < nListParameters.getLength(); k++){
 
 						NamedNodeMap attributesParam=nListParameters.item(k).getAttributes();
 						//Revisi�n si se trata de un par�metro
-						if (attributesParam.getNamedItem("kind") == null){
+						if (attributesParam.getNamedItem("name") != null){
 
 							//Creaci�n del nodo Parametro
-							String parName = attributesParam.getNamedItem("name").getNodeValue();
+							Node attName = attributesParam.getNamedItem("name");
+							String parName="";
+							if(attName!=null){
+								parName=attName.getNodeValue();
+								validarNombreElementos(parName, nListParameters.item(k));
+							}
 							String parId = attributesParam.getNamedItem("xmi.id").getNodeValue();
-							String parType = attributesParam.getNamedItem("prQYKnCn9SJd").getNodeValue();
-							Nodo parametro = new Nodo(parName, parId, "Parametro");
+							String parType = attributesParam.getNamedItem("type").getNodeValue();
+							Nodo parametro = new Nodo(parName, parId, "Parametro",nListParameters.item(k));
 							parametro.setTipo(parType);
 							//Agregando el Par�metro a la Operaci�n
 							operacion.getParametros().add(parametro);
 						}
-
-						//Revisi�n si se trata de un Return 
+						/*
+						//Revisi�n si se trata de un Return, 
+						 solo especifica el tipo de retrno del metodo 
 						if (attributesParam.getNamedItem("name") == null){
 							//Creci�n del nodo Return
 							String parId = attributesParam.getNamedItem("xmi.id").getNodeValue();
 							String parType = attributesParam.getNamedItem("type").getNodeValue();
 							String parName = "Return";
-							Nodo parametro = new Nodo(parName, parId, "Return"); 
+							Nodo parametro = new Nodo(parName, parId, "Return",nListParameters.item(k)); 
 							parametro.setTipo(parType);
 							//Agregando el Return a la Operaci�n
-							operacion.getParametros().add(parametro);
-						}
-
+							//operacion.getParametros().add(parametro);
+						}*/
 					}
 					clase.getOperaciones().add(operacion);
 				}
@@ -214,6 +220,9 @@ public class TreeAbstract {
 		if(!nombre.matches("^[a-zA-Z][a-zA-Z0-9]*")){
 			ErroresNombreInvalidos.add(nodo);
 		}
+		if(palabrasReservadas.contains(nombre)){
+			ErroresPalabrasReservadas.add(nodo);
+		}
 	}
 	/************
 	  PACKAGES
@@ -227,7 +236,7 @@ public class TreeAbstract {
 			//Creaci�n del Nodo
 			String name = attributes.getNamedItem("name").getNodeValue();
 			String id = attributes.getNamedItem("xmi.id").getNodeValue();
-			packages.put(id,new Nodo(name, id, "Paquete"));
+			packages.put(id,new Nodo(name, id, "Paquete",nNode));
 		}
 	}
 
@@ -244,7 +253,7 @@ public class TreeAbstract {
 			//Creaci�n del Nodo
 			String name = attributes.getNamedItem("name").getNodeValue();
 			String id = attributes.getNamedItem("xmi.id").getNodeValue();
-			dataType.put(id,new Nodo(name, id, "DataType"));
+			dataType.put(id,new Nodo(name, id, "DataType",nNode));
 		}
 	}
 
@@ -362,6 +371,21 @@ public class TreeAbstract {
 			
 		}
 	}
+	
+	private void initPalabrasReservadas(){
+		palabrasReservadas.add("String");
+		palabrasReservadas.add("void");
+		palabrasReservadas.add("int");
+		palabrasReservadas.add("private");
+		palabrasReservadas.add("public");
+		palabrasReservadas.add("if");
+		palabrasReservadas.add("class");
+		palabrasReservadas.add("return");
+	}
+	
+	public ArrayList<Nodo> getClases() {
+		return clases;
+	}
 
 	public ArrayList<Node> getErroresNombre() {
 		return ErroresNombre;
@@ -381,6 +405,10 @@ public class TreeAbstract {
 
 	public ArrayList<Node> getErroresRelaciones() {
 		return ErroresRelaciones;
+	}
+
+	public ArrayList<Node> getErroresPalabrasReservadas() {
+		return ErroresPalabrasReservadas;
 	}
 	
 	

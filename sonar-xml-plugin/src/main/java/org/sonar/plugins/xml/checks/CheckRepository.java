@@ -42,7 +42,14 @@ public class CheckRepository {
       new AttributeEmptyTypeCheck(),
       new AttributeValidTypeCheck(),
       new ElementInvalidNameCheck(),
-      new RelationshipConnectedCheck());
+      new RelationshipConnectedCheck(),
+      new EmptyClassCheck(),
+      new MaxSevenParameterClassCheck(),
+      new SameAttributeClassCheck(),
+      new DuplicateOperationsClassCheck(),
+      new CheckElementsClassCheck(),
+      new NumberOperationClassCheck(),
+      new ClassConstructorCheck());
   }
 
   public static List<Class> getCheckClasses() {
